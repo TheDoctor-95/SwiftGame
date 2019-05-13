@@ -27,11 +27,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         cam = SKCameraNode()
         self.camera = cam
         
+        
+        
         self.addChild(cam!)
         
         
         createPlayer()
         createEnemies()
+        ponerVida()
         
     }
     
@@ -68,9 +71,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         sprite.setScale(4)
         
-        sprite.physicsBody = SKPhysicsBody(circleOfRadius: 100)
+        sprite.physicsBody = SKPhysicsBody(circleOfRadius: arrayTextures[0].size().height*4/2)
         
-        sprite.physicsBody?.isDynamic = false
+        sprite.physicsBody?.isDynamic = true
         
         sprite.physicsBody!.categoryBitMask = tipoNodo.character.rawValue
         
@@ -85,39 +88,57 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func createEnemies(){
         
-        for i in 1...1{
-        
         let arrayTextures = loadTextures(name: "golem", min: 16, max: 18) 
         let sprite = SKSpriteNode(texture: arrayTextures[0])
         
         let animation = SKAction.repeatForever(SKAction.animate(with: arrayTextures, timePerFrame: 0.2))
-        
+        sprite.name = "enemy"
+            
         sprite.run(animation)
         
-            sprite.position = CGPoint(x:0, y:50*i)
+            sprite.position = CGPoint(x:0, y:50)
         
         sprite.setScale(4)
           
         
-        sprite.physicsBody = SKPhysicsBody(circleOfRadius: 100)
+        sprite.physicsBody = SKPhysicsBody(circleOfRadius: arrayTextures[0].size().height*4/2)
             
-        sprite.physicsBody?.isDynamic = false
+        sprite.physicsBody?.isDynamic = true
             
         sprite.physicsBody!.categoryBitMask = tipoNodo.enemy.rawValue
             
         sprite.physicsBody!.collisionBitMask = tipoNodo.character.rawValue | tipoNodo.enemy.rawValue
-        sprite.physicsBody!.contactTestBitMask = tipoNodo.character .rawValue
+        sprite.physicsBody!.contactTestBitMask = tipoNodo.character.rawValue | tipoNodo.enemy.rawValue
         
         
             
         self.addChild(sprite)
             let enemyCharracter = Character(sprite: sprite, life: 60, atack: 10, moveDistance: 500)
         enemies.append(enemyCharracter)
-        }
+    
         
     }
     
     func touchDown(atPoint pos : CGPoint) {
+        
+        let nodes = self.nodes(at: pos)
+        
+        if(nodes.count == 0){
+            move(pos: pos)
+        }else{
+            if(distance(a: pos, b: character.sprite.position) < 200){
+                let arrayAnimacion = loadTextures(name: "archer", min: 10, max: 15)
+                
+                character.sprite.run(SKAction.animate(with: arrayAnimacion, timePerFrame: 0.2))
+            }else{
+               move(pos: pos)
+            }
+        }
+        
+        
+    }
+    
+    func move(pos: CGPoint){
         let moveTo = SKAction.move(to: pos, duration: 1)
         print(pos)
         
@@ -127,16 +148,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func moveEnemies() {
-        for enemi in enemies{
-            let dist = distance(a: enemi.sprite.position, b: character.sprite.position)
-            if(dist < 100){
+        for enemy in enemies{
+            let dist = distance(a: enemy.sprite.position, b: character.sprite.position)
+            if(dist < 200){
                 //ACATACA
+                let arrayAnimacion = loadTextures(name: "golem", min: 10, max: 15)
                 
+                enemy.sprite.run(SKAction.animate(with: arrayAnimacion, timePerFrame: 0.2))
+                
+                character.hit(damage: enemy.atack);
                 
             }else if(dist < 500) {
                 //SE MUEVE HACIE EL PERSONAJE
                 let moveTo = SKAction.move(to: character.sprite.position, duration: 1)
-                enemi.sprite.run(moveTo)
+                enemy.sprite.run(moveTo)
             }else {
                 //SE MUEVE RANDOM
                 
@@ -192,25 +217,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 camera.position = character.sprite.position
         }
         
-        if(enemiesClose()){
-            //puede atacar
-            print("en Rango")
-        }
+        labelVida.text = "\(character.life) -  \(character.maxLife)"
         
     }
+    let labelVida = SKLabelNode()
     
-    func ponerBotonAtaque(){
-        
+    func ponerVida(){
+        labelVida.fontName = "Arial"
+        labelVida.fontSize = 20
+        labelVida.text = "0"
+        labelVida.position = CGPoint(x: self.frame.midX, y: self.frame.midY + 500)
+        labelVida.zPosition = 2
+        self.addChild(labelVida)
     }
     
     
-    func enemiesClose() -> Bool {
-        for enemy in enemies{
-            if(distance(a: character.sprite.position, b: enemy.sprite.position)<100){
-                return true
-            }
-        }
-        return false
+    
+    
+    func didBegin(_ contact: SKPhysicsContact) {
+        // en contact tenemos bodyA y bodyB que son los cuerpos que hicieron contacto
+        let cuerpoA = contact.bodyA
+        let cuerpoB = contact.bodyB
+        // Miramos si la mosca ha pasado por el hueco
+        print("contacto", cuerpoA.categoryBitMask, cuerpoB.categoryBitMask)
+        
+        
+        
     }
     
 }

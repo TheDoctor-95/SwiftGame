@@ -35,4 +35,9 @@ class Character {
         
     }
     
+    
+    func hit(damage: Int) {
+        life -= damage
+    }
+    
 }
