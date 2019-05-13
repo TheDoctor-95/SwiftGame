@@ -140,7 +140,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func move(pos: CGPoint){
         let moveTo = SKAction.move(to: pos, duration: 1)
+        
+        
         print(pos)
+        
+        
         
         character.sprite.run(moveTo) {
             self.moveEnemies()
