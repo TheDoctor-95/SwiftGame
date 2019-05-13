@@ -9,57 +9,159 @@
 import SpriteKit
 import GameplayKit
 
-class GameScene: SKScene {
+class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private var label : SKLabelNode?
     private var spinnyNode : SKShapeNode?
+    private var cam: SKCameraNode?
+    
+    var character: Character = Character()
+    
+    var enemies = [Character]()
     
     override func didMove(to view: SKView) {
+        super.didMove(to: view)
         
-        // Get label node from scene and store it for use later
-        self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
-        if let label = self.label {
-            label.alpha = 0.0
-            label.run(SKAction.fadeIn(withDuration: 2.0))
+        self.physicsWorld.contactDelegate = self
+
+        cam = SKCameraNode()
+        self.camera = cam
+        
+        self.addChild(cam!)
+        
+        
+        createPlayer()
+        createEnemies()
+        
+    }
+    
+    enum tipoNodo: UInt32 {
+        case character = 1
+        case enemy = 2
+    }
+    
+    
+    func loadTextures(name: String, min: Int, max: Int)->[SKTexture]{
+        var arrayTextures = [SKTexture]()
+        
+        for index in min...max{
+            let textura = SKTexture(image: UIImage(named: "\(name)\(index)")!)
+            
+            arrayTextures.append(textura)
         }
         
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
+        return arrayTextures
+    }
+    
+    
+    
+    func createPlayer(){
+        let arrayTextures = loadTextures(name: "archer",min:16,max:18)
         
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 2.5
+        let sprite = SKSpriteNode(texture: arrayTextures[0])
+        
+        let animation = SKAction.repeatForever(SKAction.animate(with: arrayTextures, timePerFrame: 0.2))
+        
+        sprite.run(animation)
+        
+        sprite.position = CGPoint(x: 0, y: 0)
+        
+        sprite.setScale(4)
+        
+        sprite.physicsBody = SKPhysicsBody(circleOfRadius: 100)
+        
+        sprite.physicsBody?.isDynamic = false
+        
+        sprite.physicsBody!.categoryBitMask = tipoNodo.character.rawValue
+        
+        sprite.physicsBody!.collisionBitMask = tipoNodo.enemy.rawValue
+        sprite.physicsBody!.contactTestBitMask = tipoNodo.enemy.rawValue
+        
+        self.addChild(sprite)
+        
+        character = Character(sprite: sprite, life: 100, atack: 40, moveDistance: 500)
+        
+    }
+    
+    func createEnemies(){
+        
+        for i in 1...1{
+        
+        let arrayTextures = loadTextures(name: "golem", min: 16, max: 18) 
+        let sprite = SKSpriteNode(texture: arrayTextures[0])
+        
+        let animation = SKAction.repeatForever(SKAction.animate(with: arrayTextures, timePerFrame: 0.2))
+        
+        sprite.run(animation)
+        
+            sprite.position = CGPoint(x:0, y:50*i)
+        
+        sprite.setScale(4)
+          
+        
+        sprite.physicsBody = SKPhysicsBody(circleOfRadius: 100)
             
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
+        sprite.physicsBody?.isDynamic = false
+            
+        sprite.physicsBody!.categoryBitMask = tipoNodo.enemy.rawValue
+            
+        sprite.physicsBody!.collisionBitMask = tipoNodo.character.rawValue | tipoNodo.enemy.rawValue
+        sprite.physicsBody!.contactTestBitMask = tipoNodo.character .rawValue
+        
+        
+            
+        self.addChild(sprite)
+            let enemyCharracter = Character(sprite: sprite, life: 60, atack: 10, moveDistance: 500)
+        enemies.append(enemyCharracter)
+        }
+        
+    }
+    
+    func touchDown(atPoint pos : CGPoint) {
+        let moveTo = SKAction.move(to: pos, duration: 1)
+        print(pos)
+        
+        character.sprite.run(moveTo) {
+            self.moveEnemies()
+        }
+    }
+    
+    func moveEnemies() {
+        for enemi in enemies{
+            let dist = distance(a: enemi.sprite.position, b: character.sprite.position)
+            if(dist < 100){
+                //ACATACA
+                
+                
+            }else if(dist < 500) {
+                //SE MUEVE HACIE EL PERSONAJE
+                let moveTo = SKAction.move(to: character.sprite.position, duration: 1)
+                enemi.sprite.run(moveTo)
+            }else {
+                //SE MUEVE RANDOM
+                
+                
+            }
+            
         }
     }
     
     
-    func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
-        }
+    func distance(a: CGPoint, b: CGPoint) -> CGFloat{
+        let xDist: CGFloat = a.x-b.x
+        
+        let yDist:CGFloat = a.y-b.y
+        
+        return sqrt((xDist*xDist)+(yDist*yDist))
+        
     }
     
     func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
-        }
+        
     }
     
     func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
+        
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -85,5 +187,30 @@ class GameScene: SKScene {
     
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
+        super.update(currentTime)
+        if let camera = cam{
+                camera.position = character.sprite.position
+        }
+        
+        if(enemiesClose()){
+            //puede atacar
+            print("en Rango")
+        }
+        
     }
+    
+    func ponerBotonAtaque(){
+        
+    }
+    
+    
+    func enemiesClose() -> Bool {
+        for enemy in enemies{
+            if(distance(a: character.sprite.position, b: enemy.sprite.position)<100){
+                return true
+            }
+        }
+        return false
+    }
+    
 }
