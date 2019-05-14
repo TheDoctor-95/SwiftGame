@@ -117,7 +117,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             sprite.name = "enemy"
             
             sprite.run(animation)
-            
+            //TODO SPAWN RANDOM
             sprite.position = CGPoint(x:0, y:50)
             
             sprite.setScale(4)
@@ -172,6 +172,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 if(distance(a: pos, b: character.sprite.position) < 200 && nodes[0].name == "enemy"){
                     let arrayAnimacion = loadTextures(name: "archer", min: 10, max: 15)
                     self.removeChildren(in: [nodes[0]])
+                    
+                    //TODO
                     //enemies.removeAll(where: enemy.sprite=node[0])
                     points += rondaActual
                     character.sprite.run(SKAction.animate(with: arrayAnimacion, timePerFrame: 0.2))
@@ -209,6 +211,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 action = SKAction.move(to: character.sprite.position, duration: 1)
                 
             }else {
+                //TODO
                 //SE MUEVE RANDOM
                 
                 
